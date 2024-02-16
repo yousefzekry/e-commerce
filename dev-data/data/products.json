@@ -1,0 +1,11 @@
+[
+  {
+    "name": "Samsung Galaxy",
+    "model": "A51",
+    "year": "2019",
+    "description": "A great phone"
+  },
+  { "id": 0, "name": "test", "model": "testModel" },
+  { "id": 1, "name": "test", "model": "testModel" },
+  { "id": 2, "name": "test", "model": "testModel" }
+]
