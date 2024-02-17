@@ -5,15 +5,10 @@ const app = express();
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.status(200).send("get request working");
-});
-
 const products = JSON.parse(
   fs.readFileSync(`${__dirname}/dev-data/data/products.json`)
 );
-
-app.get("/api/v1/products", (req, res) => {
+const getAllProducts = (req, res) => {
   res.status(200).json({
     status: "success",
     results: products.length,
@@ -21,8 +16,8 @@ app.get("/api/v1/products", (req, res) => {
       products,
     },
   });
-});
-app.get("/api/v1/products/:id", (req, res) => {
+};
+const getProduct = (req, res) => {
   console.log(req.params);
   //storing string id into variable id and converting it into number
   const id = req.params.id * 1;
@@ -45,9 +40,8 @@ app.get("/api/v1/products/:id", (req, res) => {
       product,
     },
   });
-});
-
-app.post("/api/v1/products", (req, res) => {
+};
+const createProduct = (req, res) => {
   // console.log(req.body);
   const newId = products[products.length - 1].id + 1;
   const newProduct = Object.assign({ id: newId }, req.body);
@@ -64,9 +58,8 @@ app.post("/api/v1/products", (req, res) => {
       });
     }
   );
-});
-
-app.patch("/api/v1/products/:id", (req, res) => {
+};
+const updateProduct = (req, res) => {
   const id = req.params.id * 1;
 
   const product = products.find((el) => el.id === id);
@@ -80,9 +73,8 @@ app.patch("/api/v1/products/:id", (req, res) => {
     status: "success",
     data: { product: "<product updated here...." },
   });
-});
-
-app.delete("/api/v1/products/:id", (req, res) => {
+};
+const deleteProduct = (req, res) => {
   const id = req.params.id * 1;
 
   const product = products.find((el) => el.id === id);
@@ -96,8 +88,19 @@ app.delete("/api/v1/products/:id", (req, res) => {
     status: "success",
     data: null,
   });
-});
+};
+app.get("/api/v1/products", getAllProducts);
+app.post("/api/v1/products", createProduct);
+app.get("/api/v1/products/:id", getProduct);
+app.patch("/api/v1/products/:id", updateProduct);
+app.delete("/api/v1/products/:id", deleteProduct);
 
+app.route("/api/v1/products").get(getAllProducts).post(createProduct);
+app
+  .route("/api/v1/products/:id")
+  .get(getProduct)
+  .patch(updateProduct)
+  .delete(deleteProduct);
 const port = 5000;
 app.listen(port, () => {
   console.log(`listening to port ${port}`);
