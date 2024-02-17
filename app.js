@@ -89,11 +89,6 @@ const deleteProduct = (req, res) => {
     data: null,
   });
 };
-app.get("/api/v1/products", getAllProducts);
-app.post("/api/v1/products", createProduct);
-app.get("/api/v1/products/:id", getProduct);
-app.patch("/api/v1/products/:id", updateProduct);
-app.delete("/api/v1/products/:id", deleteProduct);
 
 app.route("/api/v1/products").get(getAllProducts).post(createProduct);
 app
