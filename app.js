@@ -5,6 +5,7 @@ const app = express();
 
 app.use(express.json());
 
+//handle http requests
 const products = JSON.parse(
   fs.readFileSync(`${__dirname}/dev-data/data/products.json`)
 );
@@ -90,13 +91,58 @@ const deleteProduct = (req, res) => {
   });
 };
 
-app.route("/api/v1/products").get(getAllProducts).post(createProduct);
-app
-  .route("/api/v1/products/:id")
+const getAllUsers = (req, res) => {
+  res.status(500).json({
+    status: "error",
+    message: "This route is not yet defined!",
+  });
+};
+const createUser = (req, res) => {
+  res.status(500).json({
+    status: "error",
+    message: "This route is not yet defined",
+  });
+};
+const getUser = (req, res) => {
+  res.status(500).json({
+    status: "error",
+    message: "This route is not yet defined",
+  });
+};
+const updateUser = (req, res) => {
+  res.status(500).json({
+    status: "error",
+    message: "This route is not yet defined",
+  });
+};
+const deleteUser = (req, res) => {
+  res.status(500).json({
+    status: "error",
+    message: "This route is not yet defined",
+  });
+};
+//define routes
+const productRouter = express.Router();
+const userRouter = express.Router();
+
+productRouter.route("/").get(getAllProducts).post(createProduct);
+productRouter
+  .route("/:id")
   .get(getProduct)
   .patch(updateProduct)
   .delete(deleteProduct);
-const port = 5000;
-app.listen(port, () => {
-  console.log(`listening to port ${port}`);
+
+userRouter.route("/").get(getAllUsers).post(createUser);
+userRouter.route("/:id").get(getUser).patch(updateUser).delete(deleteUser);
+
+app.use("/api/v1/products", productRouter);
+app.use("/api/v1/users", userRouter);
+//Starting Server
+const PORT = 5000;
+app.listen(PORT, (error) => {
+  if (!error)
+    console.log(
+      "Server is Successfully Running, and App is listening on port " + PORT
+    );
+  else console.log("Error occurred, server can't start", error);
 });
