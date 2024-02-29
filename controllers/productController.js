@@ -37,50 +37,88 @@ exports.getProduct = (req, res) => {
   });
 };
 exports.createProduct = (req, res) => {
-  // console.log(req.body);
+  // validation()=>{
+
+  //}
   const newId = products[products.length - 1].id + 1;
-  const newProduct = Object.assign({ id: newId }, req.body);
+  const newProduct = Object.assign({ id: newId }, req.body, { 0: "code" });
   products.push(newProduct);
   fs.writeFile(
-    `${__dirname}/dev-data/data/products.json`,
+    `${__dirname}/../dev-data/data/products.json`,
     JSON.stringify(products),
     (err) => {
-      res.status(201).json({
-        status: "success",
-        data: {
-          product: newProduct,
-        },
-      });
+      if (err) {
+        console.error("Error writing file: ", err);
+        res.status(500).json({
+          status: "error",
+          message: "internal server error",
+        });
+        return;
+      }
+      res.status(201).json(newProduct);
     }
   );
 };
 exports.updateProduct = (req, res) => {
   const id = req.params.id * 1;
 
-  const product = products.find((el) => el.id === id);
-  if (!product) {
+  const productId = products.findIndex((el) => el.id === id);
+  if (!productId) {
     return res.status(404).json({
       status: "fail",
       message: "invalid id",
     });
   }
-  res.status(200).json({
-    status: "success",
-    data: { product: "<product updated here...." },
+  const existingProduct = products[productId];
+  const updatedProduct = Object.assign({}, existingProduct, req.body, {
+    id,
   });
+  products[productId] = updatedProduct;
+
+  fs.writeFile(
+    `${__dirname}/../dev-data/data/products.json`,
+    JSON.stringify(products),
+    (err) => {
+      if (err) {
+        return res.status(500).json({
+          status: "error",
+          message: "internal server error",
+        });
+      }
+
+      res.status(200).json({
+        status: "success",
+        data: updatedProduct,
+      });
+    }
+  );
 };
+//delete req.body
 exports.deleteProduct = (req, res) => {
   const id = req.params.id * 1;
 
-  const product = products.find((el) => el.id === id);
-  if (!product) {
+  const index = products.find((el) => el.id === id);
+  if (!index) {
     return res.status(404).json({
       status: "fail",
       message: "invalid id",
     });
   }
-  res.status(204).json({
-    status: "success",
-    data: null,
-  });
+  products.splice(id, 1);
+  fs.writeFile(
+    `${__dirname}/../dev-data/data/products.json`,
+    JSON.stringify(products),
+    (err) => {
+      if (err) {
+        return res.status(500).json({
+          status: "error",
+          message: "internal server error",
+        });
+      }
+      res.status(204).json({
+        status: "success",
+        data: null,
+      });
+    }
+  );
 };
