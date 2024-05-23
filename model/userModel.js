@@ -5,12 +5,21 @@ const userSchema = new mongoose.Schema({
 		required: true,
 		unique: true,
 	},
-	firstName: {
+	username: {
 		type: String,
 	},
-	LastName: {
+	role: {
 		type: String,
+		default: "user",
 	},
+	// password: {
+	// 	type: String,
+	// 	required: true,
+	// },
+	// confirmPassword: {
+	// 	type: String,
+	// 	required: true,
+	// },
 });
 
 const User = mongoose.model("User", userSchema);

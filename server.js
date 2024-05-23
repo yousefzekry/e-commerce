@@ -9,7 +9,12 @@ const DB = process.env.DATABASE.replace(
 	process.env.DATABASE_PASSWORD
 );
 mongoose
-	.connect(DB)
+	.connect(DB, {
+		useNewUrlParser: true,
+		useUnifiedTopology: true,
+		connectTimeoutMS: 30000, // Set connection timeout to 30 seconds
+		socketTimeoutMS: 45000, // Set socket timeout to 45 seconds
+	})
 	.then(() => console.log("DB connection successful"))
 	.catch(err => {
 		console.log("ERROR");

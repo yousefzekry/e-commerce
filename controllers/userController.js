@@ -1,30 +1,44 @@
 const User = require("./../model/userModel");
 
-exports.getAllUsers = (req, res) => {
-	res.status(200).json({
-		status: "success",
-		results: users.length,
-		data: {
-			users,
-		},
-	});
-};
-exports.getUser = (req, res) => {
-	const id = req.params.id * 1;
-	const user = users.find(el => el.id === id);
-
-	if (!user) {
-		return res.status(404).json({
+exports.getAllUsers = async (req, res) => {
+	try {
+		const users = await User.find();
+		res.status(200).json({
+			status: "success",
+			results: users.length,
+			data: {
+				users: users,
+			},
+		});
+	} catch (error) {
+		res.status(404).json({
 			status: "fail",
-			message: "invalid id",
+			message: error.message,
 		});
 	}
-	res.status(200).json({
-		status: "success",
-		data: {
-			user,
-		},
-	});
+};
+exports.getUser = async (req, res) => {
+	try {
+		const user = await User.findById(req.params.id);
+		if (!user) {
+			return res.status(404).json({
+				status: "fail",
+				message: "invalid id",
+			});
+		}
+		res.status(200).json({
+			status: "success",
+			data: {
+				user,
+			},
+		});
+	} catch (error) {
+		res.status(500).json({
+			status: "error",
+			message: "server error",
+			error: error.message,
+		});
+	}
 };
 
 exports.createUser = async (req, res) => {
@@ -43,62 +57,36 @@ exports.createUser = async (req, res) => {
 		});
 	}
 };
-exports.updateUser = (req, res) => {
-	const id = req.params.id * 1;
-
-	const userId = users.findIndex(el => el.id === id);
-	if (!userId) {
-		return res.status(404).json({
+exports.updateUser = async (req, res) => {
+	try {
+		await User.findByIdAndUpdate(req.params.id, req.body, {
+			new: true,
+			runValidators: true,
+		});
+		res.status(200).json({
+			status: "success",
+			data: {
+				User,
+			},
+		});
+	} catch (err) {
+		res.status(404).json({
 			status: "fail",
-			message: "Invalid id",
+			message: err,
 		});
 	}
-	const existingUser = users[userId];
-	const updatedUser = Object.assign({}, existingUser, req.body, { id });
-	users[userId] = updatedUser;
-
-	fs.writeFile(
-		`${__dirname}/../dev-data/data/users.json`,
-		JSON.stringify(users),
-		err => {
-			if (err) {
-				return res.status(500).json({
-					status: "error",
-					message: "This route is not yet defined",
-				});
-			}
-			res.status(200).json({
-				status: "success",
-				data: updatedUser,
-			});
-		}
-	);
 };
-exports.deleteUser = (req, res) => {
-	const id = req.params.id * 1;
-
-	const index = users.find(el => el.id === id);
-	if (!index) {
-		return res.status(404).json({
+exports.deleteUser = async (req, res) => {
+	try {
+		await User.findByIdAndDelete(req.params.id);
+		res.status(200).json({
+			status: "success",
+			data: null,
+		});
+	} catch (err) {
+		res.status(404).json({
 			status: "fail",
-			message: "invalid id",
+			message: err,
 		});
 	}
-	users.splice(id, 1);
-	fs.writeFile(
-		`${__dirname}/../dev-data/data/users.json`,
-		JSON.stringify(users),
-		err => {
-			if (err) {
-				return res.status(500).json({
-					status: "error",
-					message: "internal server error",
-				});
-			}
-			res.status(204).json({
-				status: "success",
-				data: null,
-			});
-		}
-	);
 };

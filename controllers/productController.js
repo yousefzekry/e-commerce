@@ -1,124 +1,155 @@
-const fs = require("fs");
+const Product = require("./../model/productModel");
+const Category = require("./../model/categoryModel");
 
-const products = JSON.parse(
-  fs.readFileSync(`${__dirname}/../dev-data/data/products.json`)
-);
-exports.getAllProducts = (req, res) => {
-  res.status(200).json({
-    status: "success",
-    results: products.length,
-    data: {
-      products,
-    },
-  });
+exports.getAllProducts = async (req, res) => {
+	try {
+		const products = await Product.find().populate("categories");
+		res.status(200).json({
+			status: "success",
+			results: products.length,
+			data: { products },
+		});
+	} catch (error) {
+		res.status(500).json({
+			status: "error",
+			message: "Server error",
+			error: error.message,
+		});
+	}
 };
-exports.getProduct = (req, res) => {
-  console.log(req.params);
-  //storing string id into variable id and converting it into number
-  const id = req.params.id * 1;
-  /*product equals to searching in the products to find 
-      a product with id that matches the product requested*/
-  const product = products.find((el) => el.id === id);
 
-  /*try to find the id given and if there is no id send an error message */
+exports.createProduct = async (req, res) => {
+	try {
+		const { name, price, categoryNames } = req.body;
 
-  if (!product) {
-    return res.status(404).json({
-      status: "fail",
-      message: "invalid id",
-    });
-  }
+		// Find categories by names
+		const categories = await Category.find({ name: { $in: categoryNames } });
 
-  res.status(200).json({
-    status: "success",
-    data: {
-      product,
-    },
-  });
+		if (categories.length !== categoryNames.length) {
+			return res.status(400).json({
+				status: "fail",
+				message: "One or more categories are invalid",
+			});
+		}
+
+		const categoryIds = categories.map(category => category._id);
+
+		const product = new Product({
+			name,
+			price,
+			categories: categoryIds,
+		});
+
+		await product.save();
+
+		res.status(201).json({
+			status: "success",
+			data: {
+				product,
+			},
+		});
+	} catch (error) {
+		res.status(500).json({
+			status: "error",
+			message: "Server error",
+			error: error.message,
+		});
+	}
 };
-exports.createProduct = (req, res) => {
-  // validation()=>{
 
-  //}
-  const newId = products[products.length - 1].id + 1;
-  const newProduct = Object.assign({ id: newId }, req.body, { 0: "code" });
-  products.push(newProduct);
-  fs.writeFile(
-    `${__dirname}/../dev-data/data/products.json`,
-    JSON.stringify(products),
-    (err) => {
-      if (err) {
-        console.error("Error writing file: ", err);
-        res.status(500).json({
-          status: "error",
-          message: "internal server error",
-        });
-        return;
-      }
-      res.status(201).json(newProduct);
-    }
-  );
+exports.getProduct = async (req, res) => {
+	try {
+		const product = await Product.findById(req.params.id).populate(
+			"categories"
+		);
+		if (!product) {
+			return res.status(404).json({
+				status: "fail",
+				message: "Invalid product ID",
+			});
+		}
+		res.status(200).json({
+			status: "success",
+			data: { product },
+		});
+	} catch (error) {
+		res.status(500).json({
+			status: "error",
+			message: "Server error",
+			error: error.message,
+		});
+	}
 };
-exports.updateProduct = (req, res) => {
-  const id = req.params.id * 1;
 
-  const productId = products.findIndex((el) => el.id === id);
-  if (!productId) {
-    return res.status(404).json({
-      status: "fail",
-      message: "invalid id",
-    });
-  }
-  const existingProduct = products[productId];
-  const updatedProduct = Object.assign({}, existingProduct, req.body, {
-    id,
-  });
-  products[productId] = updatedProduct;
+exports.updateProduct = async (req, res) => {
+	try {
+		const { name, price, categoryNames } = req.body;
 
-  fs.writeFile(
-    `${__dirname}/../dev-data/data/products.json`,
-    JSON.stringify(products),
-    (err) => {
-      if (err) {
-        return res.status(500).json({
-          status: "error",
-          message: "internal server error",
-        });
-      }
+		// Find categories by names
+		const categories = await Category.find({ name: { $in: categoryNames } });
 
-      res.status(200).json({
-        status: "success",
-        data: updatedProduct,
-      });
-    }
-  );
+		if (categories.length !== categoryNames.length) {
+			return res.status(400).json({
+				status: "fail",
+				message: "One or more categories are invalid",
+			});
+		}
+
+		const categoryIds = categories.map(category => category._id);
+
+		const product = await Product.findByIdAndUpdate(
+			req.params.id,
+			{
+				name,
+				price,
+				categories: categoryIds,
+			},
+			{
+				new: true,
+				runValidators: true,
+			}
+		);
+
+		if (!product) {
+			return res.status(404).json({
+				status: "fail",
+				message: "Invalid product ID",
+			});
+		}
+
+		res.status(200).json({
+			status: "success",
+			data: { product },
+		});
+	} catch (error) {
+		res.status(500).json({
+			status: "error",
+			message: "Server error",
+			error: error.message,
+		});
+	}
 };
-//delete req.body
-exports.deleteProduct = (req, res) => {
-  const id = req.params.id * 1;
 
-  const index = products.find((el) => el.id === id);
-  if (!index) {
-    return res.status(404).json({
-      status: "fail",
-      message: "invalid id",
-    });
-  }
-  products.splice(id, 1);
-  fs.writeFile(
-    `${__dirname}/../dev-data/data/products.json`,
-    JSON.stringify(products),
-    (err) => {
-      if (err) {
-        return res.status(500).json({
-          status: "error",
-          message: "internal server error",
-        });
-      }
-      res.status(204).json({
-        status: "success",
-        data: null,
-      });
-    }
-  );
+exports.deleteProduct = async (req, res) => {
+	try {
+		const product = await Product.findByIdAndDelete(req.params.id);
+
+		if (!product) {
+			return res.status(404).json({
+				status: "fail",
+				message: "Invalid product ID",
+			});
+		}
+
+		res.status(204).json({
+			status: "success",
+			data: null,
+		});
+	} catch (error) {
+		res.status(500).json({
+			status: "error",
+			message: "Server error",
+			error: error.message,
+		});
+	}
 };
