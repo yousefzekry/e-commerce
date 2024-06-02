@@ -3,7 +3,13 @@ const Category = require("./../model/categoryModel");
 
 exports.getAllProducts = async (req, res) => {
 	try {
-		const products = await Product.find().populate("categories");
+		const queryObj = { ...req.query };
+		const excludedFields = ["page", "sort", "limit", "fields"];
+		excludedFields.forEach(el => delete queryObj[el]);
+		console.log(req.query, queryObj);
+		const query = Product.find(queryObj).populate("categories");
+
+		const products = await query;
 		res.status(200).json({
 			status: "success",
 			results: products.length,
@@ -20,7 +26,7 @@ exports.getAllProducts = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
 	try {
-		const { name, price, categoryNames } = req.body;
+		const { name, price, categoryNames, imageCover, images } = req.body;
 
 		// Find categories by names
 		const categories = await Category.find({ name: { $in: categoryNames } });
@@ -38,6 +44,8 @@ exports.createProduct = async (req, res) => {
 			name,
 			price,
 			categories: categoryIds,
+			imageCover,
+			images,
 		});
 
 		await product.save();
@@ -83,7 +91,7 @@ exports.getProduct = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
 	try {
-		const { name, price, categoryNames } = req.body;
+		const { name, price, categoryNames, imageCover, images } = req.body;
 
 		// Find categories by names
 		const categories = await Category.find({ name: { $in: categoryNames } });
@@ -103,6 +111,8 @@ exports.updateProduct = async (req, res) => {
 				name,
 				price,
 				categories: categoryIds,
+				imageCover,
+				images,
 			},
 			{
 				new: true,

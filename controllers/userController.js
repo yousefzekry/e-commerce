@@ -2,7 +2,16 @@ const User = require("./../model/userModel");
 
 exports.getAllUsers = async (req, res) => {
 	try {
-		const users = await User.find();
+		//Build Query
+		const queryObj = { ...req.query };
+		const excludedFields = ["page", "sort", "limit", "fields"];
+		excludedFields.forEach(el => delete queryObj[el]);
+		console.log(req.query, queryObj);
+
+		const query = User.find(queryObj);
+
+		//Execute Query
+		const users = await query;
 		res.status(200).json({
 			status: "success",
 			results: users.length,

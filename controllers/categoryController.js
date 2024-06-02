@@ -1,3 +1,4 @@
+const { query } = require("express");
 const Category = require("./../model/categoryModel");
 const category = require("./../model/categoryModel");
 
@@ -19,7 +20,14 @@ exports.createCategory = async (req, res) => {
 };
 exports.getAllCategories = async (req, res) => {
 	try {
-		const categories = await Category.find();
+		//build the query
+		const queryObj = { ...req.query };
+		const excludedFields = ["page", "sort", "limit", "fields"];
+		excludedFields.forEach(el => delete queryObj[el]);
+		// console.log(req.query, queryObj);
+		const query = Category.find(queryObj);
+		//excute query
+		const categories = await query;
 		res.status(200).json({
 			status: "success",
 			results: categories.length,
@@ -30,7 +38,7 @@ exports.getAllCategories = async (req, res) => {
 	} catch (err) {
 		res.status(404).json({
 			status: "fail",
-			message: err,
+			message: err.message,
 		});
 	}
 };
