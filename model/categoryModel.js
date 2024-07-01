@@ -7,6 +7,11 @@ const categorySchema = new mongoose.Schema({
 		unique: [true, "The category name already exists"],
 		trim: true,
 	},
+	CreatedAt: {
+		type: Date,
+		default: Date.now(),
+		select: false,
+	},
 });
 
 const Category = mongoose.model("Category", categorySchema);

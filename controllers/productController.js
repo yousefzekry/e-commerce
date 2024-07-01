@@ -1,15 +1,23 @@
 const Product = require("./../model/productModel");
 const Category = require("./../model/categoryModel");
+const { query } = require("express");
+const APIFeatures = require("./../utils/apiFeatures");
 
+exports.aliasTopProducts = (req, res, next) => {
+	req.query.limit = "5";
+	req.query.sort = "price";
+	req.query.fields = "name,price,description,category";
+	next();
+};
 exports.getAllProducts = async (req, res) => {
 	try {
-		const queryObj = { ...req.query };
-		const excludedFields = ["page", "sort", "limit", "fields"];
-		excludedFields.forEach(el => delete queryObj[el]);
-		console.log(req.query, queryObj);
-		const query = Product.find(queryObj).populate("categories");
-
-		const products = await query;
+		//Execute Query
+		const features = new APIFeatures(Product.find(), req.query, "product")
+			.filter()
+			.sort()
+			.limitFields()
+			.paginate();
+		const products = await features.query;
 		res.status(200).json({
 			status: "success",
 			results: products.length,

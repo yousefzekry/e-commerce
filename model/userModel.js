@@ -15,6 +15,11 @@ const userSchema = new mongoose.Schema({
 		default: "user",
 		trim: true,
 	},
+	CreatedAt: {
+		type: Date,
+		default: Date.now(),
+		select: false,
+	},
 	// password: {
 	// 	type: String,
 	// 	required: true,

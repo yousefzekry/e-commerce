@@ -23,6 +23,7 @@ const productSchema = new mongoose.Schema({
 	CreatedAt: {
 		type: Date,
 		default: Date.now(),
+		select: false,
 	},
 
 	categories: [
