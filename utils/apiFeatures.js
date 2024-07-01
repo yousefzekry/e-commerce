@@ -2,6 +2,7 @@ class APIFeatures {
 	constructor(query, queryString, modelName) {
 		this.query = query;
 		this.queryString = queryString;
+		this.modelName = modelName; // Add model name to constructor
 	}
 	// Filtering based on query string parameters
 	filter() {
