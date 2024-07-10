@@ -1,43 +1,112 @@
 const Product = require("./../model/productModel");
 const Category = require("./../model/categoryModel");
 const { query } = require("express");
-const APIFeatures = require("./../utils/apiFeatures");
-
+const APIFeatures = require("../middlewares/apiFeatures");
+const asyncWrapper = require("./../middlewares/ayncWrapper");
+const errorHandler = require("./../middlewares/errorHandler");
 exports.aliasTopProducts = (req, res, next) => {
 	req.query.limit = "5";
 	req.query.sort = "price";
 	req.query.fields = "name,price,description,category";
 	next();
 };
-exports.getAllProducts = async (req, res) => {
-	try {
-		//Execute Query
-		const features = new APIFeatures(Product.find(), req.query, "product")
-			.filter()
-			.sort()
-			.limitFields()
-			.paginate();
-		const products = await features.query;
-		res.status(200).json({
-			status: "success",
-			results: products.length,
-			data: { products },
-		});
-	} catch (error) {
-		res.status(500).json({
-			status: "error",
-			message: "Server error",
-			error: error.message,
+exports.getAllProducts = asyncWrapper(async (req, res, next) => {
+	//Execute Query
+	const features = new APIFeatures(Product.find(), req.query, "product")
+		.filter()
+		.sort()
+		.limitFields()
+		.paginate();
+	const products = await features.query;
+	res.status(200).json({
+		status: "success",
+		results: products.length,
+		data: { products },
+	});
+});
+
+exports.createProduct = asyncWrapper(async (req, res, next) => {
+	const { name, price, categoryNames, imageCover, images } = req.body;
+
+	// Find categories by names
+	const categories = await Category.find({ name: { $in: categoryNames } });
+
+	if (categories.length !== categoryNames.length) {
+		return res.status(400).json({
+			status: "fail",
+			message: "One or more categories are invalid",
 		});
 	}
-};
 
-exports.createProduct = async (req, res) => {
-	try {
-		const { name, price, categoryNames, imageCover, images } = req.body;
+	const categoryIds = categories.map(category => category._id);
+
+	const product = new Product({
+		name,
+		price,
+		categories: categoryIds,
+		imageCover,
+		images,
+	});
+
+	await product.save();
+
+	res.status(201).json({
+		status: "success",
+		data: {
+			product,
+		},
+	});
+});
+
+exports.getProduct = asyncWrapper(async (req, res, next) => {
+	const product = await Product.findById(req.params.id).populate("categories");
+	if (!product) {
+		return next(new errorHandler("No product found with that ID", 404));
+	}
+	res.status(200).json({
+		status: "success",
+		data: { product },
+	});
+});
+
+exports.updateProduct = asyncWrapper(async (req, res, next) => {
+	// Log the incoming request body and params
+	console.log("Request body:", req.body);
+	console.log("Request params:", req.params);
+
+	const {
+		name,
+		description,
+		price,
+		quantity,
+		discount,
+		categoryNames,
+		imageCover,
+		images,
+	} = req.body;
+
+	// Prepare the update object
+	const updateData = {};
+	if (name !== undefined) updateData.name = name;
+	if (description !== undefined) updateData.description = description;
+	if (price !== undefined) updateData.price = price;
+	if (quantity !== undefined) updateData.quantity = quantity;
+	if (discount !== undefined) updateData.discount = discount;
+	if (imageCover !== undefined) updateData.imageCover = imageCover;
+	if (images !== undefined) updateData.images = images;
+
+	// If categoryNames are provided, handle them separately
+	if (categoryNames !== undefined) {
+		if (!Array.isArray(categoryNames)) {
+			return res.status(400).json({
+				status: "fail",
+				message: "categoryNames should be an array",
+			});
+		}
 
 		// Find categories by names
 		const categories = await Category.find({ name: { $in: categoryNames } });
+		console.log("Found categories:", categories);
 
 		if (categories.length !== categoryNames.length) {
 			return res.status(400).json({
@@ -47,127 +116,38 @@ exports.createProduct = async (req, res) => {
 		}
 
 		const categoryIds = categories.map(category => category._id);
-
-		const product = new Product({
-			name,
-			price,
-			categories: categoryIds,
-			imageCover,
-			images,
-		});
-
-		await product.save();
-
-		res.status(201).json({
-			status: "success",
-			data: {
-				product,
-			},
-		});
-	} catch (error) {
-		res.status(500).json({
-			status: "error",
-			message: "Server error",
-			error: error.message,
-		});
+		updateData.categories = categoryIds;
 	}
-};
 
-exports.getProduct = async (req, res) => {
-	try {
-		const product = await Product.findById(req.params.id).populate(
-			"categories"
-		);
-		if (!product) {
-			return res.status(404).json({
-				status: "fail",
-				message: "Invalid product ID",
-			});
-		}
-		res.status(200).json({
-			status: "success",
-			data: { product },
-		});
-	} catch (error) {
-		res.status(500).json({
-			status: "error",
-			message: "Server error",
-			error: error.message,
-		});
+	// Check if req.params.id is present
+	if (!req.params.id) {
+		return next(new errorHandler("No product found with that ID", 404));
 	}
-};
 
-exports.updateProduct = async (req, res) => {
-	try {
-		const { name, price, categoryNames, imageCover, images } = req.body;
+	const product = await Product.findByIdAndUpdate(req.params.id, updateData, {
+		new: true,
+		runValidators: true,
+	});
 
-		// Find categories by names
-		const categories = await Category.find({ name: { $in: categoryNames } });
-
-		if (categories.length !== categoryNames.length) {
-			return res.status(400).json({
-				status: "fail",
-				message: "One or more categories are invalid",
-			});
-		}
-
-		const categoryIds = categories.map(category => category._id);
-
-		const product = await Product.findByIdAndUpdate(
-			req.params.id,
-			{
-				name,
-				price,
-				categories: categoryIds,
-				imageCover,
-				images,
-			},
-			{
-				new: true,
-				runValidators: true,
-			}
-		);
-
-		if (!product) {
-			return res.status(404).json({
-				status: "fail",
-				message: "Invalid product ID",
-			});
-		}
-
-		res.status(200).json({
-			status: "success",
-			data: { product },
-		});
-	} catch (error) {
-		res.status(500).json({
-			status: "error",
-			message: "Server error",
-			error: error.message,
-		});
+	if (!product) {
+		return next(new errorHandler("No product found with that ID", 404));
 	}
-};
 
-exports.deleteProduct = async (req, res) => {
-	try {
-		const product = await Product.findByIdAndDelete(req.params.id);
+	res.status(200).json({
+		status: "success",
+		data: { product },
+	});
+});
 
-		if (!product) {
-			return res.status(404).json({
-				status: "fail",
-				message: "Invalid product ID",
-			});
-		}
+exports.deleteProduct = asyncWrapper(async (req, res, next) => {
+	const product = await Product.findByIdAndDelete(req.params.id);
 
-		res.status(204).json({
-			status: "success",
-			data: null,
-		});
-	} catch (error) {
-		res.status(500).json({
-			status: "error",
-			message: "Server error",
-			error: error.message,
-		});
+	if (!product) {
+		return next(new errorHandler("No product found with that ID", 404));
 	}
-};
+
+	res.status(204).json({
+		status: "success",
+		data: null,
+	});
+});

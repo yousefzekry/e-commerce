@@ -1,103 +1,71 @@
 const { query } = require("express");
-const APIFeatures = require("../utils/apiFeatures");
+const APIFeatures = require("../middlewares/apiFeatures");
+const asyncWrapper = require("../middlewares/ayncWrapper");
+const errorHandler = require("./../middlewares/errorHandler");
 const Category = require("./../model/categoryModel");
 
-exports.createCategory = async (req, res) => {
-	try {
-		const newCategory = await Category.create(req.body);
-		res.status(201).json({
-			status: "success",
-			data: {
-				categories: newCategory,
-			},
-		});
-	} catch (error) {
-		res.status(500).json({
-			status: "fail",
-			message: error.message,
-		});
+exports.createCategory = asyncWrapper(async (req, res, next) => {
+	const newCategory = await Category.create(req.body);
+	res.status(201).json({
+		status: "success",
+		data: {
+			categories: newCategory,
+		},
+	});
+});
+exports.getAllCategories = asyncWrapper(async (req, res, next) => {
+	//excute query
+	const features = new APIFeatures(Category.find(), req.query, "Category")
+		.filter()
+		.sort()
+		.limitFields()
+		.paginate();
+	const categories = await features.query;
+	res.status(200).json({
+		status: "success",
+		results: categories.length,
+		data: {
+			categories: categories,
+		},
+	});
+});
+exports.getCategory = asyncWrapper(async (req, res, next) => {
+	const category = await Category.findById(req.params.id);
+	if (!category) {
+		return next(new errorHandler("No category found with that ID", 404));
 	}
-};
-exports.getAllCategories = async (req, res) => {
-	try {
-		//excute query
-		const features = new APIFeatures(Category.find(), req.query, "Category")
-			.filter()
-			.sort()
-			.limitFields()
-			.paginate();
-		const categories = await features.query;
-		res.status(200).json({
-			status: "success",
-			results: categories.length,
-			data: {
-				categories: categories,
-			},
-		});
-	} catch (err) {
-		console.error("Error in getAllCategories:", err);
-		res.status(500).json({
-			status: "fail",
-			message: err.message,
-		});
+	res.status(200).json({
+		status: "Success",
+		data: {
+			category,
+		},
+	});
+});
+exports.updateCategory = asyncWrapper(async (req, res, next) => {
+	const category = await Category.findByIdAndUpdate(req.params.id, req.body, {
+		new: true,
+		runValidators: true,
+	});
+	if (!category) {
+		return next(new errorHandler("No category found with that ID", 404));
 	}
-};
-exports.getCategory = async (req, res) => {
-	try {
-		const category = await Category.findById(req.params.id);
-		if (!category) {
-			return res.status(404).json({
-				status: "fail",
-				message: "invalid id",
-			});
-		}
-		res.status(200).json({
-			status: "Success",
-			data: {
-				category,
-			},
-		});
-	} catch (error) {
-		res.status(500).json({
-			status: "error",
-			message: "Server error",
-			error: error.message,
-		});
+	res.status(200).json({
+		status: "Success",
+		data: {
+			Category,
+		},
+	});
+});
+exports.deleteCategory = asyncWrapper(async (req, res, next) => {
+	const category = await Category.findByIdAndDelete(req.params.id);
+	if (!category) {
+		return next(new errorHandler("No category found with that ID", 404));
 	}
-};
-exports.updateCategory = async (req, res) => {
-	try {
-		await Category.findByIdAndUpdate(req.params.id, req.body, {
-			new: true,
-			runValidators: true,
-		});
-		res.status(200).json({
-			status: "Success",
-			data: {
-				Category,
-			},
-		});
-	} catch (error) {
-		res.status(404).json({
-			status: "fail",
-			message: error.message,
-		});
-	}
-};
-exports.deleteCategory = async (req, res) => {
-	try {
-		await Category.findByIdAndDelete(req.params.id);
-		res.status(200).json({
-			status: "success",
-			data: null,
-		});
-	} catch (err) {
-		res.status(404).json({
-			status: "fail",
-			message: err,
-		});
-	}
-};
+	res.status(204).json({
+		status: "success",
+		data: null,
+	});
+});
 
 //build the query
 //1A) Filtering
