@@ -15,6 +15,14 @@ router
 	.route("/")
 	.get(authController.protect, getAllProducts)
 	.post(createProduct);
-router.route("/:id").get(getProduct).patch(updateProduct).delete(deleteProduct);
+router
+	.route("/:id")
+	.get(getProduct)
+	.patch(updateProduct)
+	.delete(
+		authController.protect,
+		authController.restrictTo("admin"),
+		deleteProduct
+	);
 
 module.exports = router;
