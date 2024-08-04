@@ -1,12 +1,26 @@
 const express = require("express");
+const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
 const productRouter = require("./routes/productRoutes");
 const categoryRouter = require("./routes/categoryRoutes");
 const userRouter = require("./routes/userRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 const globalErrorHandler = require("./controllers/errorController");
 const app = express();
-app.use(express.json()); //
 
+// Set Security http headers
+app.use(helmet());
+const limiter = rateLimit({
+	max: 100,
+	windowMs: 60 * 60 * 10000,
+	message: "Too many requests from this IP, please try again in an hour!",
+});
+
+// Limit requests from same API
+app.use("/api", limiter);
+
+// body parser, reading from body into req.body
+app.use(express.json({ limit: "10kb" }));
 app.use("/api/v1/products", productRouter);
 app.use("/api/v1/categories", categoryRouter);
 app.use("/api/v1/users", userRouter);

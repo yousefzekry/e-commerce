@@ -15,6 +15,20 @@ const signToken = id => {
 const createAndSendToken = (user, statusCode, res) => {
 	const token = signToken(user._id);
 
+	const cookieOptions = {
+		expires: new Date(
+			Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+		),
+		//prevent xss attacks
+		httpOnly: true,
+	};
+	// cookie will only be sent in encrypted connection
+	if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+
+	res.cookie("jwt", token, cookieOptions);
+	//remove the password from the creation of user output
+	// user.password = undefined;
+
 	res.status(statusCode).json({
 		status: "success",
 		token,
@@ -42,9 +56,10 @@ exports.login = asyncWrapper(async (req, res, next) => {
 	if (!email || !password) {
 		return next(new errorHandler("please provide email and password!", 400));
 	}
+	console.log(email);
 	// 2) Check if user exists && password is correct
-	const user = await User.findOne({ email }).select("+password");
-
+	const user = await User.findOne({ email }).select("password");
+	console.log(user);
 	if (!user || !(await user.correctPassword(password, user.password))) {
 		return next(new errorHandler("Incorrect Email or Password", 401));
 	}

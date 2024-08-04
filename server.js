@@ -1,4 +1,5 @@
 const dotenv = require("dotenv");
+dotenv.config({ path: "./.env" });
 const mongoose = require("mongoose");
 
 process.on("uncaughtException", err => {
@@ -7,7 +8,6 @@ process.on("uncaughtException", err => {
 	process.exit(1);
 });
 
-dotenv.config({ path: "./.env" });
 const app = require("./app");
 
 const DB = process.env.DATABASE.replace(

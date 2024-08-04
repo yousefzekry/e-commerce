@@ -14,7 +14,8 @@ const filterObj = (obj, ...allowedFields) => {
 
 exports.getAllUsers = asyncWrapper(async (req, res, next) => {
 	//Execute Query
-	const features = new APIFeatures(User.find(), req.query, "Category")
+	console.log("Query parameters:", req.query);
+	const features = new APIFeatures(User.find(), req.query, "User")
 		.filter()
 		.sort()
 		.limitFields()
@@ -98,6 +99,14 @@ exports.deleteUser = asyncWrapper(async (req, res, next) => {
 		return next(new errorHandler("No user found with that ID", 404));
 	}
 	res.status(200).json({
+		status: "success",
+		data: null,
+	});
+});
+exports.deactivateMe = asyncWrapper(async (req, res, next) => {
+	await User.findByIdAndUpdate(req.user.id, { active: false });
+
+	res.status(204).json({
 		status: "success",
 		data: null,
 	});
