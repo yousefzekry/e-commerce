@@ -4,6 +4,14 @@ const asyncWrapper = require("./../middlewares/ayncWrapper");
 const errorHandler = require("./../middlewares/errorHandler");
 const User = require("./../model/userModel");
 
+const filterObj = (obj, ...allowedFields) => {
+	const newObj = {};
+	Object.keys(obj).forEach(el => {
+		if (allowedFields.includes(el)) newObj[el] = obj[el];
+	});
+	return newObj;
+};
+
 exports.getAllUsers = asyncWrapper(async (req, res, next) => {
 	//Execute Query
 	const features = new APIFeatures(User.find(), req.query, "Category")
@@ -20,6 +28,33 @@ exports.getAllUsers = asyncWrapper(async (req, res, next) => {
 		},
 	});
 });
+
+exports.updateMe = asyncWrapper(async (req, res, next) => {
+	//1) Create error if user POSTs password
+	if (req.body.password || req.body.confirmPassword) {
+		return next(
+			new errorHandler(
+				"This route is not for password updates. Please use /updateMyPassword.",
+				400
+			)
+		);
+	}
+	// 2) filter out the unwanted fields names that are not allowed to be updated.
+	const filteredBody = filterObj(req.body, "name", "email");
+	// 3) Update user document
+	const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
+		new: true,
+		runValidators: true,
+	});
+
+	res.status(200).json({
+		status: "success",
+		data: {
+			user: updatedUser,
+		},
+	});
+});
+
 exports.getUser = asyncWrapper(async (req, res, next) => {
 	const user = await User.findById(req.params.id);
 	if (!user) {
