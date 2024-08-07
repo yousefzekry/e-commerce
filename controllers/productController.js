@@ -46,6 +46,7 @@ exports.createProduct = asyncWrapper(async (req, res, next) => {
 		categories: categoryIds,
 		imageCover,
 		images,
+		user: req.user.id,
 	});
 
 	await product.save();
@@ -132,6 +133,11 @@ exports.updateProduct = asyncWrapper(async (req, res, next) => {
 	if (!product) {
 		return next(new errorHandler("No product found with that ID", 404));
 	}
+	if (product.user.toString() !== req.user.id && req.user.role !== "admin") {
+		return next(
+			new errorHandler("You do not have permission to perform this action", 403)
+		);
+	}
 
 	res.status(200).json({
 		status: "success",
@@ -145,7 +151,12 @@ exports.deleteProduct = asyncWrapper(async (req, res, next) => {
 	if (!product) {
 		return next(new errorHandler("No product found with that ID", 404));
 	}
-
+	// Check if the logged-in user is the owner of the product or an admin
+	if (product.user.toString() !== req.user.id && req.user.role !== "admin") {
+		return next(
+			new errorHandler("You do not have permission to perform this action", 403)
+		);
+	}
 	res.status(204).json({
 		status: "success",
 		data: null,

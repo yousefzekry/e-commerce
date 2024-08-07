@@ -25,6 +25,11 @@ const productSchema = new mongoose.Schema({
 		default: Date.now(),
 		select: false,
 	},
+	user: {
+		type: mongoose.Schema.ObjectId,
+		ref: "User",
+		required: [true, "A product must belong to a user"],
+	},
 
 	categories: [
 		{

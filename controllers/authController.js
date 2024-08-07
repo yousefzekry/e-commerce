@@ -57,9 +57,9 @@ exports.login = asyncWrapper(async (req, res, next) => {
 		return next(new errorHandler("please provide email and password!", 400));
 	}
 	console.log(email);
+	console.log(req.body);
 	// 2) Check if user exists && password is correct
 	const user = await User.findOne({ email }).select("password");
-	console.log(user);
 	if (!user || !(await user.correctPassword(password, user.password))) {
 		return next(new errorHandler("Incorrect Email or Password", 401));
 	}

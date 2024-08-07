@@ -14,14 +14,22 @@ router.route("/top-5-products").get(aliasTopProducts, getAllProducts);
 router
 	.route("/")
 	.get(authController.protect, getAllProducts)
-	.post(createProduct);
+	.post(
+		authController.protect,
+		authController.restrictTo("user", "admin"),
+		createProduct
+	);
 router
 	.route("/:id")
 	.get(getProduct)
-	.patch(updateProduct)
+	.patch(
+		authController.protect,
+		authController.restrictTo("user", "admin"),
+		updateProduct
+	)
 	.delete(
 		authController.protect,
-		authController.restrictTo("admin"),
+		authController.restrictTo("user", "admin"),
 		deleteProduct
 	);
 
