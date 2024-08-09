@@ -8,6 +8,17 @@ process.on("uncaughtException", err => {
 	process.exit(1);
 });
 
+process.on("unhandledRejection", err => {
+	console.log(err.name, err.message);
+	console.log("Unhadled rejection! shutting down...");
+	console.log(err);
+	server.close(() => {
+		process.exit(1);
+	});
+});
+
+process.on("uncaughtException", err => {});
+
 const app = require("./app");
 
 const DB = process.env.DATABASE.replace(
@@ -35,14 +46,3 @@ const server = app.listen(PORT, error => {
 		);
 	else console.log("Error occurred, server can't start", error);
 });
-
-process.on("unhandledRejection", err => {
-	console.log(err.name, err.message);
-	console.log("Unhadled rejection! shutting down...");
-	console.log(err);
-	server.close(() => {
-		process.exit(1);
-	});
-});
-
-process.on("uncaughtException", err => {});
